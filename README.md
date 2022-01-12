@@ -1,4 +1,4 @@
-# devconfcz2022-predictive-autoscaling-patterns-in-kubernetes
+# DevConf.CZ 2022 - Predictive Autoscaling Patterns in Kubernetes
 
 * [**DevConf Session - Predictive Autoscaling Patterns in Kubernetes**](https://devconfcz2022.sched.com/event/siIn/predictive-autoscaling-patterns-in-kubernetes)
 
