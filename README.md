@@ -21,4 +21,4 @@ After this workshop, you will understand the implementation details and the arch
 ## Contributors / Maintainers
 
 * [Germán Montalvo](github.com/gmontalvoy/)
-* [Germán Montalvo](github.com/rcarrata)
+* [Roberto Carratalá](github.com/rcarrata)
