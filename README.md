@@ -16,7 +16,7 @@ After this workshop, you will understand the implementation details and the arch
 
 ## Slides
 
-* [TBD](docs/slides.pdf)
+* [Coming Soon!](docs/slides.pdf)
 
 ## Contributors / Maintainers
 
