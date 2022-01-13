@@ -4,56 +4,56 @@
 
 PROMPT_TIMEOUT=7
 
-p "# Deploying applications without VPA"
-pei "PROJECT=test-novpa-devconf22"
-p ""
+# p "# Deploying applications without VPA"
+# pei "PROJECT=test-novpa-devconf22"
+# p ""
 
-p "# Namespace creation"
-pei "oc new-project $PROJECT"
-p ""
+# p "# Namespace creation"
+# pei "oc new-project $PROJECT"
+# p ""
 
-p "# Delete existing LimitRange"
-pei "oc delete limitrange --all -n $PROJECT"
-p ""
+# p "# Delete existing LimitRange"
+# pei "oc delete limitrange --all -n $PROJECT"
+# p ""
 
-p "# Deploying example application"
-pei 'cat <<EOF | oc -n $PROJECT apply -f -
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: stress-novpa
-spec:
-  selector:
-    matchLabels:
-      app: stress
-  replicas: 1
-  template:
-    metadata:
-      labels:
-        app: stress
-    spec:
-      containers:
-      - name: stress
-        image: polinux/stress
-        resources:
-          requests:
-            memory: "100Mi"
-          limits:
-            memory: "200Mi"
-        command: ["stress"]
-        args: ["--vm", "1", "--vm-bytes", "250M"]
-EOF'
-p ""
+# p "# Deploying example application"
+# pei 'cat <<EOF | oc -n $PROJECT apply -f -
+# apiVersion: apps/v1
+# kind: Deployment
+# metadata:
+#   name: stress-novpa
+# spec:
+#   selector:
+#     matchLabels:
+#       app: stress
+#   replicas: 1
+#   template:
+#     metadata:
+#       labels:
+#         app: stress
+#     spec:
+#       containers:
+#       - name: stress
+#         image: polinux/stress
+#         resources:
+#           requests:
+#             memory: "100Mi"
+#           limits:
+#             memory: "200Mi"
+#         command: ["stress"]
+#         args: ["--vm", "1", "--vm-bytes", "250M"]
+# EOF'
+# p ""
 
-PROMPT_TIMEOUT=60
-wait
+# PROMPT_TIMEOUT=60
+# wait
 
-p "# Listing pod status"
-pei "oc describe pod | grep Reason:"
-p ""
+# p "# Listing pod status"
+# pei "oc describe pod | grep Reason:"
+# p ""
 
-p "# The pods gets killed as the the vm the container use is above the spec.resources.limits.memory"
-p ""
+# p "# The pods gets killed as the the vm the container use is above the spec.resources.limits.memory"
+# p ""
 
 p "# Deploying applications with VPA"
 
@@ -140,6 +140,22 @@ p ""
 
 p "# Check the vpa status"
 wait
-p "oc get vpa -n $PROJECT"
-p "oc get vpa stress-vpa -o jsonpath='{.status}' | jq -r ."
+pei "oc get vpa -n $PROJECT"
+pei "oc get vpa stress-vpa -o jsonpath='{.status}' | jq -r ."
+p ""
+
+p "# The application is now limited by 200M in memory usage"
+pei "oc get pod -l app=stress -n $PROJECT -o yaml | grep limits -A1"
+p ""
+
+p "We are going to simulate how VPA is going to adjust the resources as long as the application uses more resources"
+pei """oc patch deployment stress --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/args/3", "value": "250M" }]'"""
+p ""
+
+p "The VPA will notice this change and adapt the resources as needed."
+pei "oc get pod -l app=stress -o yaml | grep vpa"
+
+p "After the redeploy, you should see right values on the new pod"
+pei "oc get pod -l app=stress -o yaml | grep -e limit -e requests -A1"
+p ''
 
