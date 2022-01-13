@@ -1,77 +1,80 @@
-. demo-magic.sh -n
+. demo-magic.sh
 
 # WARNING: This demoscript needs VerticalPodAutoscaler operator installed.
 
-PROMPT_TIMEOUT=7
+pei "# Deploying applications without VPA"
+pe "PROJECT=test-novpa-devconf22"
+pei ""
 
-# p "# Deploying applications without VPA"
-# pei "PROJECT=test-novpa-devconf22"
-# p ""
+pei "# Namespace creation"
+pe "oc new-project $PROJECT"
+pei ""
 
-# p "# Namespace creation"
-# pei "oc new-project $PROJECT"
-# p ""
+pei "# Delete existing LimitRange"
+pe "oc delete limitrange --all -n $PROJECT"
+pei ""
 
-# p "# Delete existing LimitRange"
-# pei "oc delete limitrange --all -n $PROJECT"
-# p ""
+pei "# Deploying example application"
+pe 'cat <<EOF | oc -n $PROJECT apply -f -
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-novpa
+spec:
+  selector:
+    matchLabels:
+      app: stress
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: stress
+    spec:
+      containers:
+      - name: stress
+        image: polinux/stress
+        resources:
+          requests:
+            memory: "100Mi"
+          limits:
+            memory: "200Mi"
+        command: ["stress"]
+        args: ["--vm", "1", "--vm-bytes", "250M"]
+EOF'
+pei ""
 
-# p "# Deploying example application"
-# pei 'cat <<EOF | oc -n $PROJECT apply -f -
-# apiVersion: apps/v1
-# kind: Deployment
-# metadata:
-#   name: stress-novpa
-# spec:
-#   selector:
-#     matchLabels:
-#       app: stress
-#   replicas: 1
-#   template:
-#     metadata:
-#       labels:
-#         app: stress
-#     spec:
-#       containers:
-#       - name: stress
-#         image: polinux/stress
-#         resources:
-#           requests:
-#             memory: "100Mi"
-#           limits:
-#             memory: "200Mi"
-#         command: ["stress"]
-#         args: ["--vm", "1", "--vm-bytes", "250M"]
-# EOF'
-# p ""
+PROMPT_TIMEOUT=5
+wait
 
-# PROMPT_TIMEOUT=60
-# wait
+pei "# Listing resources"
+pe "oc get pods"
+pei ""
 
-# p "# Listing pod status"
-# pei "oc describe pod | grep Reason:"
-# p ""
+pei "# Listing pod status"
+pe "oc describe pod | grep Reason:"
+pei ""
 
-# p "# The pods gets killed as the the vm the container use is above the spec.resources.limits.memory"
-# p ""
+pei "#################################"
+pei "# Deploying applications with VPA"
+pei "#################################"
 
-p "# Deploying applications with VPA"
+pei "# Set production namespace name"
+pe "PROJECT=test-vpa-devconf22"
+pei ""
 
-pei "PROJECT=test-vpa-devconf22"
+pei ""
+pei "# Namespace creation"
+pe "oc new-project $PROJECT"
+pei ""
 
-p ""
-p "# Namespace creation"
-pei "oc new-project $PROJECT"
-p ""
+pei "# Delete any existing LimitRange"
+pe "oc delete limitrange --all -n $PROJECT"
+pei ""
 
-p "# Delete existing LimitRange"
-pei "oc delete limitrange --all -n $PROJECT"
-p ""
+pei "# Now, define the requests as 100Mi and the limits with 200Mi for the container stress. While the application use 150M"
+pei ""
 
-p "# Now, define the requests as 100Mi and the limits with 200Mi for the container stress."
-p ""
-
-pei 'cat <<EOF | oc -n $PROJECT apply -f -
+pe 'cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -97,25 +100,25 @@ spec:
         command: ["stress"]
         args: ["--vm", "1", "--vm-bytes", "150M"]
 EOF'
+pei ""
 
+pei "# List pod resources"
+pe "oc get pods -n $PROJECT"
+pei ""
+
+pei "# Describe the requests/limits on the application"
+pe "oc get pod -l app=stress -o yaml | grep -e limit -e requests -A1"
+pei ""
+
+pei "# VPA will use the metrics to adapt the application resources, let's check them"
+
+PROMPT_TIMEOUT=20
 wait
-p ""
-pei "oc get pods -n $PROJECT"
-p ""
+pe "oc adm top pod --namespace=$PROJECT --use-protocol-buffers"
+pei ""
 
-p "# Describe the requests/limits on the application"
-pei "oc get pod -l app=stress -o yaml | grep -e limit -e requests -A1"
-p ""
-
-p "# VPA will use the metrics to adapt the application resources, let's check them"
-wait
-# NOTE: metrics will take at least 20 sec to show on the following output, adapt the demo explanation taking this in consideration (f. ex: explaining above objects and talking about requests/limits)
-
-pei "oc adm top pod --namespace=$PROJECT --use-protocol-buffers"
-p ""
-
-p "# VPA can include max/mins to encapsulate resource requests and limits"
-pei "cat <<EOF | oc -n $PROJECT apply -f -
+pei "# VPA creation"
+pe "cat <<EOF | oc -n $PROJECT apply -f -
 apiVersion: 'autoscaling.k8s.io/v1'
 kind: VerticalPodAutoscaler
 metadata:
@@ -136,26 +139,28 @@ spec:
           memory: 1024Mi
         controlledResources: ['cpu', 'memory']
 EOF"
-p ""
+pei ""
 
-p "# Check the vpa status"
+pei "# Check the vpa status"
+PROMPT_TIMEOUT=18
 wait
-pei "oc get vpa -n $PROJECT"
-pei "oc get vpa stress-vpa -o jsonpath='{.status}' | jq -r ."
-p ""
+pe "oc get vpa -n $PROJECT"
+pe "oc get vpa stress-vpa -o jsonpath='{.status}' | jq -r ."
+pei ""
 
-p "# The application is now limited by 200M in memory usage"
-pei "oc get pod -l app=stress -n $PROJECT -o yaml | grep limits -A1"
-p ""
+pei "# The application is now limited by 200M in memory usage"
+pe "oc get pod -l app=stress -n $PROJECT -o yaml | grep limits -A1"
+pei ""
 
-p "We are going to simulate how VPA is going to adjust the resources as long as the application uses more resources"
-pei """oc patch deployment stress --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/args/3", "value": "250M" }]'"""
-p ""
+pei "# We are going to simulate how VPA is going to adjust the resources as long as the application uses more resources"
+pe """oc patch deployment stress --type='json' -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/args/3", "value": "250M" }]'"""
+pei ""
 
-p "The VPA will notice this change and adapt the resources as needed."
-pei "oc get pod -l app=stress -o yaml | grep vpa"
+pei "# The VPA will notice this change and adapt the resources as needed."
+pe "oc get pod -l app=stress -o yaml | grep vpa"
+pei ""
 
-p "After the redeploy, you should see right values on the new pod"
-pei "oc get pod -l app=stress -o yaml | grep -e limit -e requests -A1"
-p ''
+pei "# After the redeploy, you should see right values on the new pod"
+pe "oc get pod -l app=stress -o yaml | grep -e limit -e requests -A1"
+pei ''
 

@@ -12,13 +12,13 @@
 ###############################################################################
 
 # the speed to "type" the text
-TYPE_SPEED=20
+TYPE_SPEED=40
 
 # no wait after "p" or "pe"
 NO_WAIT=false
 
 # if > 0, will pause for this amount of seconds before automatically proceeding with any p or pe
-PROMPT_TIMEOUT=0
+PROMPT_TIMEOUT=2
 
 # don't show command number unless user specifies it
 SHOW_CMD_NUMS=false
