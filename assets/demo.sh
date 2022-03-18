@@ -3,7 +3,7 @@
 # WARNING: This demoscript needs VerticalPodAutoscaler operator installed.
 
 pei "# Deploying applications without VPA"
-pe "PROJECT=test-novpa-devconf22"
+pe "PROJECT=test-rio-novpa"
 pei ""
 
 pei "# Namespace creation"
@@ -59,7 +59,7 @@ pei "# Deploying applications with VPA"
 pei "#################################"
 
 pei "# Set production namespace name"
-pe "PROJECT=test-vpa-devconf22"
+pe "PROJECT=test-rio-vpa"
 pei ""
 
 pei ""
@@ -112,7 +112,7 @@ pei ""
 
 pei "# VPA will use the metrics to adapt the application resources, let's check them"
 
-PROMPT_TIMEOUT=20
+PROMPT_TIMEOUT=5
 wait
 pe "oc adm top pod --namespace=$PROJECT --use-protocol-buffers"
 pei ""
@@ -142,7 +142,7 @@ EOF"
 pei ""
 
 pei "# Check the vpa status"
-PROMPT_TIMEOUT=18
+PROMPT_TIMEOUT=5
 wait
 pe "oc get vpa -n $PROJECT"
 pe "oc get vpa stress-vpa -o jsonpath='{.status}' | jq -r ."
